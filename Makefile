@@ -28,13 +28,10 @@ zhwiki.raw: zhwiki.source
 zhwiki.dict: zhwiki.raw
 	libime_pinyindict zhwiki.raw zhwiki.dict
 
-zhwiki.rime.raw: zhwiki.source
-	./convert.py zhwiki.source --rime > zhwiki.rime.raw
-
-zhwiki.dict.yaml: zhwiki.rime.raw
+zhwiki.dict.yaml: zhwiki.source luna_pinyin.dict.yaml
 	echo '# zhwiki-$(VERSION)' > zhwiki.dict.yaml
 	echo '---\nname: zhwiki\nversion: "0.1"\nsort: by_weight\n...\n' >> zhwiki.dict.yaml
-	cat zhwiki.rime.raw >> zhwiki.dict.yaml
+	./convert.py zhwiki.source --rime >> zhwiki.dict.yaml
 
 install: zhwiki.dict
 	install -Dm644 zhwiki.dict -t $(DESTDIR)/usr/share/fcitx5/pinyin/dictionaries/

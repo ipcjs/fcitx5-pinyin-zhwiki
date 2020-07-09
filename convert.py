@@ -10,14 +10,14 @@ import sys
 
 import opencc
 from pypinyin import lazy_pinyin, pinyin, Style, load_single_dict, load_phrases_dict
-
+from pypinyin.core import PHRASES_DICT, PINYIN_DICT
 # Require at least 2 characters
 _MINIMUM_LEN = 2
 _LIST_PAGE_ENDINGS = [
     '列表',
     '对照表',
 ]
-_LOG_EVERY = 1000
+_LOG_EVERY = 100000
 
 _PINYIN_SEPARATOR = '\''
 _HANZI_RE = re.compile('^[\u4e00-\u9fa5]+$')
@@ -114,12 +114,14 @@ def main():
 
 # example:
 # 於	wu	0%
-PATTERN_RIME_DICT_ITEM = re.compile(r'^(?P<word>\w+)\t(?P<pinyin>[a-z ]+)(\t(?P<percent>[\d]+)%)?$')
+PATTERN_RIME_DICT_ITEM = re.compile(r'^(?P<word>\w+)\t(?P<pinyin>[a-z ]+)(\t(?P<percent>[\d.]+)%)?$')
 
 
 def load_luna_dict():
     single_dict = {}
     phrases_dict = {}
+    # 朙月拼音是专为繁体字设计的字典, 里面的简体字被看成"被大陸簡化字借用字形的傳承字"标注的是"古音"
+    # 用来处理带简体字的zhwiki效果惨不忍睹(-_-#)
     with open('./luna_pinyin.dict.yaml', mode='r') as f:
         for line in f:
             match = PATTERN_RIME_DICT_ITEM.match(line)
@@ -146,7 +148,17 @@ def load_luna_dict():
                             phrases_dict[word][i].append(w[i])
                     else:
                         logging.warn(f'invalid pinyin: {groups}')
-
+    # 移除内置单字词典的多音字
+    for (word, pinyins) in PINYIN_DICT.items():
+        pinyin_list = pinyins.split(',')
+        if len(pinyin_list) > 1:
+            PINYIN_DICT[word] = pinyin_list[0]
+    # 移除内置词组的多音字
+    for (word, phrases) in PHRASES_DICT.items():
+        for p in phrases:
+            while(len(p) > 1):
+                p.pop()
+    # 加载luna词典
     load_single_dict(single_dict)
     load_phrases_dict(phrases_dict)
 
