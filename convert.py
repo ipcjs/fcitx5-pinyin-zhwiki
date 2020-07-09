@@ -9,7 +9,7 @@ import re
 import sys
 
 import opencc
-from pypinyin import lazy_pinyin
+from pypinyin import lazy_pinyin, pinyin, Style, load_single_dict, load_phrases_dict
 
 # Require at least 2 characters
 _MINIMUM_LEN = 2
@@ -50,14 +50,14 @@ def log_count(count):
     logging.info(f'{count} words generated')
 
 
-def process(convert_title, title_to_line):
+def process(convert_title, title_to_lines):
     previous_title = None
     result_count = 0
     with open(sys.argv[1]) as f:
         for line in f:
             title = convert_title(line.strip())
             if is_good_title(title, previous_title):
-                line = title_to_line(title)
+                line = title_to_lines(title)
                 if line is not None:
                     print(line)
                 result_count += 1
@@ -67,14 +67,39 @@ def process(convert_title, title_to_line):
     log_count(result_count)
 
 
+def flat_phrases(phrases):
+    """
+    @see https://zhuanlan.zhihu.com/p/66930500
+    """
+    lines = []
+
+    def process(arr, index=0):
+        if index >= len(phrases):
+            lines.append(arr.copy())
+            return
+        for it in phrases[index]:
+            arr.append(it)
+            process(arr, index+1)
+            arr.pop()
+
+    process([])
+    return [' '.join(line) for line in lines]
+
+
 def main():
     if sys.argv[2] == '--rime':
+        load_luna_dict()
+
+        def title_to_lines(title):
+            phrases = pinyin(title, style=Style.NORMAL, heteronym=True)
+            return '\n'.join((f'{title}\t{phrase}' for phrase in flat_phrases(phrases)))
+
         process(
             convert_title=lambda it: it,
-            title_to_line=lambda it: it
+            title_to_lines=title_to_lines
         )
     else:
-        def title_to_line(title):
+        def title_to_lines(title):
             pinyin = _PINYIN_SEPARATOR.join(lazy_pinyin(title))
             if pinyin == title:
                 logging.info(
@@ -83,8 +108,61 @@ def main():
             return '\t'.join([title, pinyin, '0'])
         process(
             convert_title=lambda it: _TO_SIMPLIFIED_CHINESE.convert(it),
-            title_to_line=title_to_line
+            title_to_lines=title_to_lines
         )
+
+
+# example:
+# 於	wu	0%
+PATTERN_RIME_DICT_ITEM = re.compile(r'^(?P<word>\w+)\t(?P<pinyin>[a-z ]+)(\t(?P<percent>[\d]+)%)?$')
+
+
+def load_luna_dict():
+    single_dict = {}
+    phrases_dict = {}
+    with open('./luna_pinyin.dict.yaml', mode='r') as f:
+        for line in f:
+            match = PATTERN_RIME_DICT_ITEM.match(line)
+            if match:
+                groups = match.groupdict()
+                word = groups['word']
+                pinyin = groups['pinyin']
+                percent = float(groups['percent']) if groups['percent'] is not None else 100
+                if percent < 5:
+                    # Exclude low frequency words
+                    continue
+                if len(word) == 1:
+                    codePoint = ord(word)
+                    if single_dict.get(codePoint) is None:
+                        single_dict[codePoint] = pinyin
+                    else:
+                        single_dict[codePoint] = f'{single_dict[codePoint]},{pinyin}'
+                else:
+                    w = pinyin.split(' ')
+                    if phrases_dict.get(word) is None:
+                        phrases_dict[word] = [[it] for it in w]
+                    elif len(phrases_dict[word]) == len(w):
+                        for i in range(len(w)):
+                            phrases_dict[word][i].append(w[i])
+                    else:
+                        logging.warn(f'invalid pinyin: {groups}')
+
+    load_single_dict(single_dict)
+    load_phrases_dict(phrases_dict)
+
+
+def test_load_luna_dict():
+    load_luna_dict()
+    print(lazy_pinyin('長月達平'))
+    print(pinyin('長月達平', style=Style.NORMAL, heteronym=True))
+
+
+def test_flat_phrases():
+    print(flat_phrases([
+        ['a', 'b', 'c'],
+        ['1', '2', '3'],
+        ['fuck', 'you'],
+    ]))
 
 
 if __name__ == '__main__':

@@ -10,6 +10,9 @@ download: $(FILENAME).gz
 $(FILENAME).gz:
 	wget https://dumps.wikimedia.org/zhwiki/$(VERSION)/$(FILENAME).gz
 
+luna_pinyin.dict.yaml:
+	wget https://github.com/rime/rime-luna-pinyin/raw/master/luna_pinyin.dict.yaml
+
 web-slang.source:
 	./zhwiki-web-slang.py > web-slang.source
 

@@ -4,3 +4,4 @@
 zhwiki-*-all-titles-in-ns0
 *.dict.yaml
 *.dict
+.vscode/
