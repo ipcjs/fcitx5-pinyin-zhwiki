@@ -117,37 +117,76 @@ def main():
 PATTERN_RIME_DICT_ITEM = re.compile(r'^(?P<word>\w+)\t(?P<pinyin>[a-z ]+)(\t(?P<percent>[\d.]+)%)?$')
 
 
+class Dict(dict):
+    def __setattr__(self, key, value):
+        self[key] = value
+
+    def __getattr__(self, key):
+        return self[key]
+
+
 def load_luna_dict():
     single_dict = {}
     phrases_dict = {}
     # 朙月拼音是专为繁体字设计的字典, 里面的简体字被看成"被大陸簡化字借用字形的傳承字"标注的是"古音"
-    # 用来处理带简体字的zhwiki效果惨不忍睹(-_-#)
-    with open('./luna_pinyin.dict.yaml', mode='r') as f:
+    # 直接用来处理带简体字的zhwiki效果惨不忍睹(-_-#), 这里使用opencc尝试规避该问题
+    luna_dict = {}
+    luna_dict_simple = {}
+    with open('./rime-luna-pinyin/luna_pinyin.dict.yaml', mode='r') as f:
         for line in f:
             match = PATTERN_RIME_DICT_ITEM.match(line)
             if match:
-                groups = match.groupdict()
-                word = groups['word']
-                pinyin = groups['pinyin']
-                percent = float(groups['percent']) if groups['percent'] is not None else 100
-                if percent < 5:
-                    # Exclude low frequency words
-                    continue
-                if len(word) == 1:
-                    codePoint = ord(word)
-                    if single_dict.get(codePoint) is None:
-                        single_dict[codePoint] = pinyin
-                    else:
-                        single_dict[codePoint] = f'{single_dict[codePoint]},{pinyin}'
+                item = Dict(match.groupdict())
+                # item中的words字段进用来debug时追踪item的来源
+                word = item['word']
+                item.pop('word')
+                item.words = word
+                item.percent = float(item.percent) if item.percent is not None else 100
+
+                if luna_dict.get(word) is None:
+                    luna_dict[word] = [item]
                 else:
-                    w = pinyin.split(' ')
-                    if phrases_dict.get(word) is None:
-                        phrases_dict[word] = [[it] for it in w]
-                    elif len(phrases_dict[word]) == len(w):
-                        for i in range(len(w)):
-                            phrases_dict[word][i].append(w[i])
+                    # 多音字
+                    luna_dict[word].append(item)
+
+                word_simple = _TO_SIMPLIFIED_CHINESE.convert(word)
+                if word != word_simple:
+                    item_simple = Dict(item)
+                    if luna_dict_simple.get(word_simple) is None:
+                        luna_dict_simple[word_simple] = [item_simple]
                     else:
-                        logging.warn(f'invalid pinyin: {groups}')
+                        # 多繁转一简后同音的情况, 此时应该将词频累加
+                        for exist_item in luna_dict_simple[word_simple]:
+                            if exist_item.pinyin == item_simple.pinyin:
+                                exist_item.percent += item_simple.percent
+                                exist_item.words += item_simple.words
+                                # logging.info(f'exist_item: {exist_item}')
+                                break
+                        else:
+                            luna_dict_simple[word_simple].append(item_simple)
+    # 使用简体字的注音覆盖繁体字的注音, 则那些"被大陸簡化字借用字形的傳承字"的注音大多会被覆盖掉...
+    luna_dict.update(luna_dict_simple)
+    for (word, items) in luna_dict.items():
+        for item in items:
+            if item.percent < 5:
+                # 排除低频词
+                continue
+            if len(word) == 1:
+                codePoint = ord(word)
+                if single_dict.get(codePoint) is None:
+                    single_dict[codePoint] = item.pinyin
+                else:
+                    single_dict[codePoint] = f'{single_dict[codePoint]},{item.pinyin}'
+            else:
+                w = item.pinyin.split(' ')
+                if phrases_dict.get(word) is None:
+                    phrases_dict[word] = [[it] for it in w]
+                elif len(phrases_dict[word]) == len(w):
+                    for i in range(len(w)):
+                        phrases_dict[word][i].append(w[i])
+                else:
+                    logging.warn(f'invalid pinyin: {word} -> {item}')
+
     # 移除内置单字词典的多音字
     for (word, pinyins) in PINYIN_DICT.items():
         pinyin_list = pinyins.split(',')
@@ -178,4 +217,7 @@ def test_flat_phrases():
 
 
 if __name__ == '__main__':
-    main()
+    if len(sys.argv) > 1:
+        main()
+    else:
+        test_load_luna_dict()
