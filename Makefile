@@ -3,7 +3,8 @@ FILENAME=zhwiki-$(VERSION)-all-titles-in-ns0
 
 all: build
 
-build: zhwiki.dict
+# build: zhwiki.dict
+build: zhwiki.dict.yaml
 
 download: $(FILENAME).gz
 
