@@ -33,7 +33,7 @@ zhwiki.rime.raw: zhwiki.source
 
 zhwiki.dict.yaml: zhwiki.rime.raw
 	echo '# zhwiki-$(VERSION)' > zhwiki.dict.yaml
-	echo -e '---\nname: zhwiki\nversion: "0.1"\nsort: by_weight\n...\n' >> zhwiki.dict.yaml
+	echo '---\nname: zhwiki\nversion: "0.1"\nsort: by_weight\n...\n' >> zhwiki.dict.yaml
 	cat zhwiki.rime.raw >> zhwiki.dict.yaml
 
 install: zhwiki.dict
