@@ -11,8 +11,8 @@ import sys
 import opencc
 from pypinyin import lazy_pinyin, pinyin, Style, load_single_dict, load_phrases_dict
 from pypinyin.core import PHRASES_DICT, PINYIN_DICT
-# Require at least 2 characters
-_MINIMUM_LEN = 2
+# Require at least 3 characters
+_MINIMUM_LEN = 3
 _LIST_PAGE_ENDINGS = [
     '列表',
     '对照表',
