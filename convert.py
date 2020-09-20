@@ -50,14 +50,18 @@ def log_count(count):
     logging.info(f'{count} words generated')
 
 
-def process(convert_title, title_to_lines):
+def process(convert_title, title_to_line, convert_titles):
     previous_title = None
     result_count = 0
     with open(sys.argv[1]) as f:
+        titles = []
         for line in f:
             title = convert_title(line.strip())
+            titles.append(title)
+        titles = convert_titles(titles)
+        for title in titles:
             if is_good_title(title, previous_title):
-                line = title_to_lines(title)
+                line = title_to_line(title)
                 if line is not None:
                     print(line)
                 result_count += 1
@@ -87,19 +91,35 @@ def flat_phrases(phrases):
 
 
 def main():
-    if sys.argv[2] == '--rime':
+    if len(sys.argv) > 2 and sys.argv[2] == '--rime':
         load_luna_dict()
 
-        def title_to_lines(title):
+        def title_to_line(title):
             phrases = pinyin(title, style=Style.NORMAL, heteronym=True)
             return '\n'.join((f'{title}\t{phrase}' for phrase in flat_phrases(phrases)))
 
+        def convert_titles(titles):
+            map = {}
+            map_traditional = {}
+            for indexed_title in enumerate(titles):
+                title = indexed_title[1]
+                title_simple = _TO_SIMPLIFIED_CHINESE.convert(title)
+                if title != title_simple:
+                    # 简繁不同, 则title一定是繁体字
+                    map_traditional[title_simple] = indexed_title
+                else:
+                    map[title] = indexed_title
+            map.update(map_traditional)
+            # 依index排序, 保证词条顺序不变
+            return (title for index, title in sorted(map.values(), key=lambda it: it[0]))
+
         process(
             convert_title=lambda it: it,
-            title_to_lines=title_to_lines
+            title_to_line=title_to_line,
+            convert_titles=convert_titles,
         )
     else:
-        def title_to_lines(title):
+        def title_to_line(title):
             pinyin = _PINYIN_SEPARATOR.join(lazy_pinyin(title))
             if pinyin == title:
                 logging.info(
@@ -108,7 +128,8 @@ def main():
             return '\t'.join([title, pinyin, '0'])
         process(
             convert_title=lambda it: _TO_SIMPLIFIED_CHINESE.convert(it),
-            title_to_lines=title_to_lines
+            title_to_line=title_to_line,
+            convert_titles=lambda it: list(dict.fromkeys(it)),
         )
 
 
