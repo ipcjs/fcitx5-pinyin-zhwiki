@@ -33,7 +33,8 @@ zhwiki.dict: zhwiki.raw
 	libime_pinyindict zhwiki.raw zhwiki.dict
 
 zhwiki.dict.yaml: zhwiki.source
-	echo '# zhwiki-$(VERSION)' > zhwiki.dict.yaml
+	echo '# VERSION: $(VERSION)' > zhwiki.dict.yaml
+	echo '# WEB_SLANG_VERSION: $(WEB_SLANG_VERSION)' >> zhwiki.dict.yaml
 	echo '---\nname: zhwiki\nversion: "0.1"\nsort: by_weight\n...\n' >> zhwiki.dict.yaml
 	./convert.py zhwiki.source --rime >> zhwiki.dict.yaml
 
