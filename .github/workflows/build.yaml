@@ -13,7 +13,7 @@ jobs:
     - name: Prepare Environment
       run: |
           pip3 install opencc pypinyin
-          apt install libime-bin
+          sudo apt install libime-bin
     
     - name: Build
       run: make zhwiki.dict zhwiki.dict.yaml
