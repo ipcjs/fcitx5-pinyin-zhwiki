@@ -20,4 +20,11 @@ jobs:
     - name: Build
       run: make zhwiki.dict zhwiki.dict.yaml
 
+    - name: Release
+      uses: ncipollo/release-action@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        artifacts: "zhwiki.dict,zhwiki.dict.yaml"
+
+
 
