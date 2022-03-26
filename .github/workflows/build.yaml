@@ -25,7 +25,7 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         artifacts: "zhwiki.dict,zhwiki.dict.yaml"
-        commit: ${{ GITHUB_SHA }}
+        commit: ${{ githu.sha }}
 
 
 
