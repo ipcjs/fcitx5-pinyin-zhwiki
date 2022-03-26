@@ -31,7 +31,7 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
         artifacts: "zhwiki.dict,zhwiki.dict.yaml"
-        bodyFile: CHANGELOG.md
+        bodyFile: "CHANGELOG.md"
         commit: ${{ github.sha }}
         tag: ${{ steps.tag.outputs.result }}
         allowUpdates: true
