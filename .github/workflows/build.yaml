@@ -26,7 +26,8 @@ jobs:
       id: tag
       run: |
           version_line=$(cat Makefile | grep 'VERSION=' -m 1)
-          echo "::set-output name=result::${version_line#VERSION=}"
+          web_slang_version_line=$(cat Makefile | grep 'WEB_SLANG_VERSION=' -m 1)
+          echo "::set-output name=result::${version_line#VERSION=}+${web_slang_version_line#WEB_SLANG_VERSION=}"
 
     - name: Release
       uses: ncipollo/release-action@v1
