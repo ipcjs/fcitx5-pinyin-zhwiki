@@ -232,6 +232,7 @@ def test_load_luna_dict():
     load_luna_dict()
     print(lazy_pinyin('長月達平'))
     print(pinyin('長月達平', style=Style.NORMAL, heteronym=True))
+    print(pinyin('一个女大学生的情思', style=Style.NORMAL, heteronym=True))
 
 
 def test_flat_phrases():
