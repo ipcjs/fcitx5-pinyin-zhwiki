@@ -22,6 +22,12 @@ jobs:
     - name: Build
       run: make zhwiki.dict zhwiki.dict.yaml
 
+    - name: Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: zhwiki.zip
+        path: zhwiki.dict.yaml
+
     - name: Extract tag name
       id: tag
       run: |
