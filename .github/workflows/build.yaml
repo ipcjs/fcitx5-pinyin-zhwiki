@@ -16,7 +16,7 @@ jobs:
     
     - name: Prepare Environment
       run: |
-          pip3 install opencc pypinyin
+          pip3 install -r requirements.txt
           sudo apt install libime-bin
     
     - name: Build
