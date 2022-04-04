@@ -6,3 +6,4 @@ zhwiki-*-all-titles-in-ns0
 *.dict
 .vscode/
 web-slang-*
+.idea/
