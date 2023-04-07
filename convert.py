@@ -112,6 +112,7 @@ def main():
                 title_simple = _TO_SIMPLIFIED_CHINESE.convert(title)
                 if title != title_simple:
                     # 和简体不同, 则title一定是繁体字
+                    # 但这个繁体不一定是正确的繁体, 一般是存在多条错误的繁体+一条正确的繁体, 这里使用OpenCC筛选出正确的繁体, 优先用它
                     if title_simple in map_traditional:
                         # 如果title_simple已添加, 则只有当前title是OpenCC认可的title_simple的繁体形式时, 才替换之前添加的内容
                         title_traditional = _TO_TRADITIONAL_CHINESE.convert(title_simple)
@@ -124,7 +125,7 @@ def main():
                     title_traditional = _TO_TRADITIONAL_CHINESE.convert(title)
                     map[title] = (index, title_traditional)
             # map_traditional是原始文本中的繁体, map是OpenCC转换出来的繁体
-            # 认为map_traditional的准确率更高, 用它覆盖map
+            # 我们认为map_traditional的准确率更高, 用它覆盖map
             map.update(map_traditional)
             # 依index排序, 保证词条顺序不变
             return (title for index, title in sorted(map.values(), key=lambda it: it[0]))
