@@ -61,7 +61,8 @@ def process(convert_title, title_to_line, convert_titles):
     with open(sys.argv[1]) as f:
         titles = []
         for line in f:
-            title = convert_title(line.strip())
+            # 日本动画很多以`！``。`结尾，移除这些符号
+            title = convert_title(line.strip().rstrip('！。'))
             titles.append(title)
         titles = convert_titles(titles)
         for title in titles:
