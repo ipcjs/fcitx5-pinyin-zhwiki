@@ -1,5 +1,5 @@
-VERSION=20220301
-WEB_SLANG_VERSION=20220312
+VERSION=20230320
+WEB_SLANG_VERSION=20230329
 FILENAME=zhwiki-$(VERSION)-all-titles-in-ns0
 WEB_SLANG_FILE=web-slang-$(WEB_SLANG_VERSION).txt
 WEB_SLANG_SOURCE=web-slang-$(WEB_SLANG_VERSION).source
@@ -27,7 +27,8 @@ zhwiki.source: $(FILENAME) $(WEB_SLANG_FILE)
 	cat $(FILENAME) $(WEB_SLANG_FILE) > zhwiki.source
 
 zhwiki.raw: zhwiki.source
-	./convert.py zhwiki.source > zhwiki.raw
+	./convert.py zhwiki.source > zhwiki.raw.tmp
+	sort -u zhwiki.raw.tmp > zhwiki.raw
 
 zhwiki.dict: zhwiki.raw
 	libime_pinyindict zhwiki.raw zhwiki.dict
