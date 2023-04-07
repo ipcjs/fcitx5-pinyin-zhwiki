@@ -22,6 +22,7 @@ _LOG_EVERY = 100000
 _PINYIN_SEPARATOR = '\''
 _HANZI_RE = re.compile('^[\u4e00-\u9fa5]+$')
 _TO_SIMPLIFIED_CHINESE = opencc.OpenCC('t2s.json')
+_TO_TRADITIONAL_CHINESE = opencc.OpenCC('s2t.json')
 
 _PINYIN_FIXES = {
     'n': 'en',  # https://github.com/felixonmars/fcitx5-pinyin-zhwiki/issues/13
@@ -110,9 +111,16 @@ def main():
                 title_simple = _TO_SIMPLIFIED_CHINESE.convert(title)
                 if title != title_simple:
                     # 简繁不同, 则title一定是繁体字
-                    map_traditional[title_simple] = indexed_title
+                    if title_simple in map_traditional:
+                        # 如果title_simple已添加, 则只有当前title是OpenCC认可的title_simple的繁体形式时, 才替换之前添加的内容
+                        title_traditional = _TO_TRADITIONAL_CHINESE.convert(title_simple)
+                        if title_traditional == title:
+                            map_traditional[title_simple] = indexed_title
+                    else:
+                        map_traditional[title_simple] = indexed_title
                 else:
                     map[title] = indexed_title
+            # 用繁体字覆盖掉简体字
             map.update(map_traditional)
             # 依index排序, 保证词条顺序不变
             return (title for index, title in sorted(map.values(), key=lambda it: it[0]))
@@ -221,7 +229,7 @@ def load_luna_dict():
     # 移除内置词组的多音字
     for (word, phrases) in PHRASES_DICT.items():
         for p in phrases:
-            while(len(p) > 1):
+            while (len(p) > 1):
                 p.pop()
     # 加载luna词典
     load_single_dict(single_dict)
