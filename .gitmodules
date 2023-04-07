@@ -1,3 +1,4 @@
 [submodule "rime-luna-pinyin"]
 	path = rime-luna-pinyin
 	url = https://github.com/ipcjs/rime-luna-pinyin.git
+	branch = master
