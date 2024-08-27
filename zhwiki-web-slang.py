@@ -17,18 +17,45 @@ def fetch():
     return wikitext
 
 
+def trim_templates(wikitext):
+    template_level = 0
+    new_wikitext = ""
+    while True:
+        assert template_level >= 0, ValueError("Unbalanced template in wikitext:\n" + wikitext)
+        pre_open, open_tag, post_open = wikitext.partition("{{")
+        pre_close, close_tag, post_close = wikitext.partition("}}")
+        if open_tag and (not close_tag or len(pre_open) < len(pre_close)):
+            # Template starts here ({{)
+            wikitext = post_open
+            if template_level == 0:
+                new_wikitext += pre_open
+            template_level += 1
+        elif close_tag:
+            # Template ends here (}})
+            wikitext = post_close
+            template_level -= 1
+        else:
+            # No more templates
+            assert template_level == 0, ValueError("Unbalanced template in wikitext:\n" + wikitext)
+            # The assertion below must be true on earth
+            assert open_tag == close_tag == "", RuntimeError("Cosmic radiation detected")
+            new_wikitext += wikitext
+            break
+
+    return new_wikitext
+
+
 def process(wikitext):
+    wikitext = trim_templates(wikitext)
     words = collections.OrderedDict()
 
     def add_word(word):
-        if word.startswith("形容"):
-            return
-        for garbage in ("、", "[", "]", "…"):
+        for garbage in ("[", "]", "…", ":", "：", ")", "）", '"', "“", "”", "-{", "}-", "简称", "簡稱"):
             word = word.replace(garbage, "")
         words[word.strip()] = None
 
     def add_words(word):
-        for word_separator in ("、", "/", "|", "，", "。"):
+        for word_separator in ("、", "/", "|", "，", "。", "?", "？", "(", "（"):
             if word_separator in word:
                 for w in word.split(word_separator):
                     # recursively resolve
@@ -37,18 +64,29 @@ def process(wikitext):
         else:
             add_word(word)
 
+    def iter_bolds(line):
+        line_bak = line
+        while "'''" in line:
+            _, sep1, line = line.partition("'''")
+            bold, sep2, line = line.partition("'''")
+            assert sep1 and sep2, ValueError("Unclosed ''' in line: " + line_bak)
+            yield bold
+
     for line in wikitext.split("\n"):
-        if line.startswith("*"):
-            # Lists
-            for table_separator in ("：", ":"):
-                if table_separator in line:
-                    word = line.split(table_separator)[0].strip("*").strip()
-                    add_words(word)
-                    break
-        elif line.startswith("|"):
-            # Tables
-            word = line.split("|")[1]
-            add_words(word)
+        if not line.startswith("*"):
+            continue
+        # Lists
+        line = line.strip("*").strip()
+        pre_colon, sep, post_colon = line.partition("'''：")
+        if not sep:
+            pre_colon, sep, post_colon = line.partition("''':")
+        for bold in iter_bolds(pre_colon + sep):
+            # Add bold words before colon
+            add_words(bold)
+        for bold in iter_bolds(post_colon):
+            # Add bold words after colon (or line w/o colon), skipping the origin of abbreviation (length probably <= 2)
+            if len(bold) > 2:
+                add_words(bold)
 
     return words
 
